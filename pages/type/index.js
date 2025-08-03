@@ -1,5 +1,6 @@
 import MainLayout from '@/components/layout/MainLayout'
-import React, { useState} from 'react'
+import { sendError } from 'next/dist/server/api-utils';
+import React, { useCallback, useEffect, useState} from 'react'
 
 // Step 1: Create a state for selecting the number of words
 // Step 2: Create a sentence container which contains a sentence from the 
@@ -12,6 +13,8 @@ import React, { useState} from 'react'
 const Type = () => {
 
   const [wordCount, setWordCount] =  useState(10);
+  const [typedText, setTypedText] = useState('');
+  const [cursorIndex, setCursorIndex] = useState(0);
 
   const sentenceConfig = [
     {
@@ -27,6 +30,35 @@ const Type = () => {
       sentence: "The quick brown fox jumps over the lazy dog and the quick brown fox jumps"
     }
   ]
+
+  const handleKeyDown = useCallback((e) => {
+    setTypedText((prev) => {
+       if (e.key === 'Backspace') {
+        const updatedText = prev.slice(0, -1);
+        return updatedText;
+      } else if(e.key.length === 1){
+        const updatedText = prev + e.key;
+        return updatedText;
+      }
+      else {
+        return '';
+      }
+    })
+  },[])
+  
+  useEffect(() => {
+    const sentence = sentenceConfig.find(s => s.count === wordCount).sentence;
+    const isCorrectSoFar = sentence.startsWith(typedText)
+  },[typedText])
+
+  useEffect(() => {
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [handleKeyDown])
+
 
   const handleWordCountChange = (newWordCount) => {
     setWordCount(newWordCount);
