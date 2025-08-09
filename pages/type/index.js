@@ -1,92 +1,82 @@
 import MainLayout from '@/components/layout/MainLayout'
-import { sendError } from 'next/dist/server/api-utils';
-import React, { useCallback, useEffect, useState} from 'react'
-
-// Step 1: Create a state for selecting the number of words
-// Step 2: Create a sentence container which contains a sentence from the 
-//         sentence config (which is a mapping of words to sentences)
-// Step 3: On keydown, highlight that particular word (At every key press, check if the letter is the same
-//         as the current cursor position, if yes change its color to bright white and move the 
-//         cursor ahead a letter, if not show a red sign for a second and dont move the cursor ahead)
-// Step 4: Create a info container which shows a dynamic WPM, highest WPM in the leadboard
+import React, { useCallback, useEffect, useState } from 'react'
 
 const Type = () => {
-
-  const [wordCount, setWordCount] =  useState(10);
+  const [wordCount, setWordCount] = useState(10);
   const [typedText, setTypedText] = useState('');
-  const [cursorIndex, setCursorIndex] = useState(0);
 
   const sentenceConfig = [
-    {
-      count: 10,
-      sentence: "The quick brown fox jumps over the lazy dog"
-    },
-    {
-      count: 25,
-      sentence: "The quick brown fox jumps over the lazy dog and the quick brown fox jumps over"
-    },
-    {
-      count: 30,
-      sentence: "The quick brown fox jumps over the lazy dog and the quick brown fox jumps"
-    }
-  ]
+    { count: 10, sentence: "The quick brown fox jumps over the lazy dog" },
+    { count: 25, sentence: "The quick brown fox jumps over the lazy dog and the quick brown fox jumps over" },
+    { count: 30, sentence: "The quick brown fox jumps over the lazy dog and the quick brown fox jumps" }
+  ];
+
+  const sentence = sentenceConfig.find(s => s.count === wordCount).sentence;
 
   const handleKeyDown = useCallback((e) => {
     setTypedText((prev) => {
-       if (e.key === 'Backspace') {
-        const updatedText = prev.slice(0, -1);
-        return updatedText;
-      } else if(e.key.length === 1){
+      if (e.key === 'Backspace') {
+        return prev.slice(0, -1);
+      } 
+      else if (e.key.length === 1) {
         const updatedText = prev + e.key;
         return updatedText;
       }
-      else {
-        return '';
-      }
-    })
-  },[])
-  
-  useEffect(() => {
-    const sentence = sentenceConfig.find(s => s.count === wordCount).sentence;
-    const isCorrectSoFar = sentence.startsWith(typedText)
-  },[typedText])
+      return prev;
+    });
+  }, [sentence]);
 
   useEffect(() => {
     document.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-    }
-  }, [handleKeyDown])
-
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [handleKeyDown]);
 
   const handleWordCountChange = (newWordCount) => {
+    setTypedText('');
     setWordCount(newWordCount);
-  }
+  };
 
   return (
     <MainLayout>
-        <div className="main-container flex flex-col items-center gap-12 h-[50vh] justify-evenly">
-            <div className='word-selector-container flex gap-4'>
-              <div className='text-white font-bold text-4xl'>Select Words</div>
-              {sentenceConfig.map((sentence) => (
-                <button 
-                  key={sentence.count}
-                    onClick={() => handleWordCountChange(sentence.count)}
-                    className={`cursor-pointer text-white border py-2 px-3 rounded-2xl ${wordCount === sentence.count ? 'bg-gray-500': ''} `}>
-                    {sentence.count}
-                </button>
-              ))}
-            </div>
-            <div className='sentence-container'>
-              <p className='text-white font-medium text-2xl font-mono'>
-                {sentenceConfig.find(sentence => sentence.count === wordCount).sentence}
-              </p>
-            </div>
-            <div className='info-container'></div>
+      <div className="main-container flex flex-col items-center gap-12 h-[50vh] justify-evenly">
+        {/* Word Selector */}
+        <div className='word-selector-container flex gap-4'>
+          <div className='text-white font-bold text-4xl'>Select Words</div>
+          {sentenceConfig.map((sentence) => (
+            <button
+              key={sentence.count}
+              onClick={() => handleWordCountChange(sentence.count)}
+              className={`cursor-pointer text-white border py-2 px-3 rounded-2xl ${wordCount === sentence.count ? 'bg-gray-500' : ''} `}
+            >
+              {sentence.count}
+            </button>
+          ))}
         </div>
-    </MainLayout>
-  )
-}
 
-export default Type
+        {/* Sentence with highlighting */}
+        <div className='sentence-container'>
+          <p className='text-white font-medium text-2xl font-mono flex gap-2.5'>
+            {sentence.split('').map((char, index) => {
+              let color = 'text-gray-400'; // default
+              if (index < typedText.length) {
+                color = typedText[index] === char ? 'text-white' : 'text-red-500';
+              }
+              return (
+                <span key={index} className={`${color}`}>
+                  {char}
+                </span>
+              );
+            })}
+          </p>
+        </div>
+
+        {/* Info container */}
+        {/* <div className='info-container text-white'>
+          Cursor Index: {cursorIndex}
+        </div> */}
+      </div>
+    </MainLayout>
+  );
+};
+
+export default Type;
