@@ -52,22 +52,24 @@ const Type = () => {
   }, [startTime]);
 
   useEffect(() => {
-    if (typedText.length > 0) {
+    if (typedText.length > 0 && startTime) {
       const correct = checkCorrectWords(typedText);
       setCorrectWordCount(correct);
 
+      const elapsed = (performance.now() - startTime) / 1000; // in seconds
+      setElapsedTime(elapsed);
+
+      const minutes = elapsed / 60;
+      const wpm = minutes > 0 ? correct / minutes : 0;
+      setWPM(wpm);
+
       if (typedText.length === sentence.length) {
         console.log("typing finished");
-        const elapsedTime = startTime ? (performance.now() - startTime) / 1000 : 0; // seconds
-        setElapsedTime(elapsedTime);
         setIsTypingFinished(true);
-
-        // WPM = (correct words / time in minutes)
-        const minutes = elapsedTime / 60;
-        setWPM(correct / minutes);
       }
     }
-  }, [typedText]);
+  }, [typedText, startTime]);
+
 
   useEffect(() => {
     document.addEventListener('keydown', handleKeyDown);
@@ -77,6 +79,9 @@ const Type = () => {
   const handleWordCountChange = (newWordCount) => {
     setTypedText('');
     setWordCount(newWordCount);
+    setCorrectWordCount(0);
+    setElapsedTime(0);
+    setWPM(0);
   };
 
   return (
@@ -114,11 +119,12 @@ const Type = () => {
         </div>
 
         {/* Info container */}
-        <div className='info-container text-white'>
+        <div className='info-container text-white text-xl flex flex-col gap-2'>
           <p>Correct Words: {correctWordCount}</p>
-          <p>Elapsed Time: {Math.floor(elapsedTime)}s</p>
+          <p>Elapsed Time: {elapsedTime.toFixed(1)} s</p>
           <p>WPM: {Math.round(WPM)}</p>
         </div>
+
       </div>
     </MainLayout>
   );
