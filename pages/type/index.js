@@ -99,7 +99,10 @@ const Type = () => {
           {sentenceConfig.map((sentence) => (
             <button
               key={sentence.count}
-              onClick={() => handleWordCountChange(sentence.count)}
+              onClick={(e) => {
+                e.currentTarget.blur();
+                handleWordCountChange(sentence.count)
+              }}
               className={`cursor-pointer text-white border py-2 px-3 rounded-2xl ${wordCount === sentence.count ? 'bg-gray-500' : ''} `}
             >
               {sentence.count}
