@@ -15,9 +15,15 @@ const Type = () => {
   const [isTypingFinished, setIsTypingFinished] = useState(false);
 
   const sentenceConfig = [
-    { count: 10, sentence: "The quick brown fox jumps over the lazy dog" },
-    { count: 25, sentence: "The quick brown fox jumps over the lazy dog and the quick brown fox jumps over" },
-    { count: 30, sentence: "The quick brown fox jumps over the lazy dog and the quick brown fox jumps" }
+    { 
+      count: 10, 
+      sentence: "Kenspeckle pupfishes skibobbing through dongola dreams imblazed his chin." },
+    { 
+      count: 25, 
+      sentence: "Amid dongola coppices, a squirrely expressman soliloquised about mothery frivolity and kenspeckle pupfishes, misreporting replevied pasts while bowpots imblazed his eisegetical chin with collectivized dreams." },
+    { 
+      count: 30, 
+      sentence: "Amid kenspeckle coppices, a squirrely expressman soliloquised about skibobbing pupfishes and mothery frivolity, misreporting ternaries of replevied pasts while bowpots of dongola dreams imblazed his eisegetical chin, considering concomitantly collectivized regrets."}
   ];
 
   const sentence = sentenceConfig.find(s => s.count === wordCount).sentence;
@@ -86,7 +92,7 @@ const Type = () => {
 
   return (
     <MainLayout>
-      <div className="main-container flex flex-col items-center gap-12 h-[50vh] justify-evenly">
+      <div className="main-container flex flex-col items-center justify-between gap-24 mt-12">
         {/* Word Selector */}
         <div className='word-selector-container flex gap-4'>
           <div className='text-white font-bold text-4xl'>Select Words</div>
@@ -102,8 +108,8 @@ const Type = () => {
         </div>
 
         {/* Sentence with highlighting */}
-        <div className='sentence-container'>
-          <p className='text-white font-medium text-2xl font-mono flex gap-2.5'>
+        <div className='sentence-container flex items-center justify-center min-h-32 max-w-3xl text-center'>
+          <p className='text-white font-medium text-2xl font-mono flex flex-wrap justify-center gap-2.5'>
             {sentence.split('').map((char, index) => {
               let color = 'text-gray-400'; // default
               if (index < typedText.length) {
