@@ -17,28 +17,42 @@ const Type = () => {
   const sentenceConfig = [
     { 
       count: 10, 
-      sentence: "Kenspeckle pupfishes skibobbing through dongola dreams imblazed his chin." },
+      sentence: [
+        "Kenspeckle", "pupfishes", "skibobbing", "through", "dongola", "dreams", "imblazed", "his", "chin."
+      ]
+    },
     { 
       count: 25, 
-      sentence: "Amid dongola coppices, a squirrely expressman soliloquised about mothery frivolity and kenspeckle pupfishes, misreporting replevied pasts while bowpots imblazed his eisegetical chin with collectivized dreams." },
+      sentence: [
+        "Amid", "dongola", "coppices,", "a", "squirrely", "expressman", "soliloquised", "about", "mothery", "frivolity", 
+        "and", "kenspeckle", "pupfishes,", "misreporting", "replevied", "pasts", "while", "bowpots", "imblazed", 
+        "his", "eisegetical", "chin", "with", "collectivized", "dreams."
+      ]
+    },
     { 
       count: 30, 
-      sentence: "Amid kenspeckle coppices, a squirrely expressman soliloquised about skibobbing pupfishes and mothery frivolity, misreporting ternaries of replevied pasts while bowpots of dongola dreams imblazed his eisegetical chin, considering concomitantly collectivized regrets."}
+      sentence: [
+        "Amid", "kenspeckle", "coppices,", "a", "squirrely", "expressman", "soliloquised", "about", "skibobbing", 
+        "pupfishes", "and", "mothery", "frivolity,", "misreporting", "ternaries", "of", "replevied", "pasts", 
+        "while", "bowpots", "of", "dongola", "dreams", "imblazed", "his", "eisegetical", "chin,", "considering", 
+        "concomitantly", "collectivized", "regrets."
+      ]
+    }
   ];
+
 
   const sentence = sentenceConfig.find(s => s.count === wordCount).sentence;
 
   const checkCorrectWords = () => {
-
-    const originalWords = sentence.split(" ");
+    const originalWords = sentence;
     const typedWords = typedText.trim().split(" ");
     let correct = 0;
     for (let i = 0; i < typedWords.length; i++) {
-      if (typedWords[i] === originalWords[i])
-        correct++;
+      if (typedWords[i] === originalWords[i]) correct++;
     }
     return correct;
-  }
+  };
+
 
   const handleKeyDown = useCallback((e) => {
 
@@ -69,7 +83,7 @@ const Type = () => {
       const wpm = minutes > 0 ? correct / minutes : 0;
       setWPM(wpm);
 
-      if (typedText.length === sentence.length) {
+      if (typedText.trim().split(" ").length === sentence.length) {
         console.log("typing finished");
         setIsTypingFinished(true);
       }
@@ -113,14 +127,22 @@ const Type = () => {
         {/* Sentence with highlighting */}
         <div className='sentence-container flex items-center justify-center min-h-32 max-w-3xl text-center'>
           <p className='text-white font-medium text-2xl font-mono flex flex-wrap justify-center gap-2.5'>
-            {sentence.split('').map((char, index) => {
-              let color = 'text-gray-400'; // default
-              if (index < typedText.length) {
-                color = typedText[index] === char ? 'text-white' : 'text-red-500';
-              }
+            {sentence.map((word, index) => {
+              const currentWordTyped = typedText?.trim().split(" ")[index] || '';
+
               return (
-                <span key={index} className={`${color}`}>
-                  {char}
+                <span key={index} className="flex gap-0.5">
+                  {word.split('').map((char, charIndex) => {
+                    let color = 'text-gray-400';
+                    if (currentWordTyped[charIndex] === char) color = 'text-white';
+                    else if (currentWordTyped[charIndex]) color = 'text-red-500';
+
+                    return (
+                      <span key={charIndex} className={`${color}`}>
+                        {char}
+                      </span>
+                    );
+                  })}
                 </span>
               );
             })}
