@@ -137,3 +137,22 @@ body {
 html, body {
   overscroll-behavior: none;
 }
+
+.cursor-light-blue {
+  animation: blink 1s infinite step-end;
+  background-color: #3ab0ff; /* Light blue */
+  height: 1.5em; /* Match the font size */
+  width: 2px; /* Thin cursor */
+}
+
+@keyframes blink {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}

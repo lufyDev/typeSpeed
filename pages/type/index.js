@@ -13,6 +13,7 @@ const Type = () => {
   const [startTime, setStartTime] = useState(null);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [isTypingFinished, setIsTypingFinished] = useState(false);
+  const [cursorPosition, setCursorPosition] = useState(0);
 
   const sentenceConfig = [
     { 
@@ -44,31 +45,35 @@ const Type = () => {
   const sentence = sentenceConfig.find(s => s.count === wordCount).sentence;
 
   const checkCorrectWords = () => {
-    const originalWords = sentence;
-    const typedWords = typedText.trim().split(" ");
+    const originalText = sentence.join(" "); // Join words with spaces
+    const typedTextTrimmed = typedText.trim(); // Trim spaces at the end
+
     let correct = 0;
-    for (let i = 0; i < typedWords.length; i++) {
-      if (typedWords[i] === originalWords[i]) correct++;
+    // Compare each character (including spaces)
+    for (let i = 0; i < typedTextTrimmed.length; i++) {
+      if (typedTextTrimmed[i] === originalText[i]) correct++;
     }
     return correct;
   };
 
 
   const handleKeyDown = useCallback((e) => {
-
     if (!startTime) setStartTime(performance.now());
 
     setTypedText((prev) => {
+      let updatedText = prev;
       if (e.key === 'Backspace') {
-        return prev.slice(0, -1);
+        updatedText = prev.slice(0, -1); // Backspace to remove the last character
       }
-      else if (e.key.length === 1) {
-        const updatedText = prev + e.key;
-        return updatedText;
+      else if (e.key === ' ' || e.key.length === 1) { // Handle space as well
+        updatedText = prev + e.key;
       }
-      return prev;
-    });
 
+      // Update cursor position after every key press
+      setCursorPosition(updatedText.length);
+
+      return updatedText;
+    });
   }, [startTime]);
 
   useEffect(() => {
@@ -102,8 +107,8 @@ const Type = () => {
     setCorrectWordCount(0);
     setElapsedTime(0);
     setWPM(0);
+    setCursorPosition(0)
   };
-
   return (
     <MainLayout>
       <div className="main-container flex flex-col items-center justify-between gap-24 mt-12">
@@ -126,27 +131,36 @@ const Type = () => {
 
         {/* Sentence with highlighting */}
         <div className='sentence-container flex items-center justify-center min-h-32 max-w-3xl text-center'>
-          <p className='text-white font-medium text-2xl font-mono flex flex-wrap justify-center gap-2.5'>
-            {sentence.map((word, index) => {
-              const currentWordTyped = typedText?.trim().split(" ")[index] || '';
+          <div className='text-white font-medium text-2xl font-mono flex flex-wrap justify-center gap-2'>
+            {sentence.join(" ").split("").map((char, index) => {
+              const currentCharTyped = typedText[index] || ''; // Get the corresponding character typed
+
+              let textColor = 'text-gray-400'; // Default color for non-typed characters
+              let bgColor = ''; // Default background color for spaces
+
+              if (currentCharTyped === char) {
+                textColor = 'text-white'; // Correctly typed characters
+              } else if (currentCharTyped) {
+                textColor = 'text-red-500'; // Incorrectly typed characters
+              }
+
+              // Handle spaces
+              if (char === ' ' && currentCharTyped === '') {
+                bgColor = ''; // No background for untapped spaces
+              } else if (char === ' ' && currentCharTyped !== ' ') {
+                bgColor = 'bg-red-500/20 px-[1px]'; // Red background if space is mistyped
+              }
 
               return (
-                <span key={index} className="flex gap-0.5">
-                  {word.split('').map((char, charIndex) => {
-                    let color = 'text-gray-400';
-                    if (currentWordTyped[charIndex] === char) color = 'text-white';
-                    else if (currentWordTyped[charIndex]) color = 'text-red-500';
-
-                    return (
-                      <span key={charIndex} className={`${color}`}>
-                        {char}
-                      </span>
-                    );
-                  })}
-                </span>
-              );
+                <div className='flex'>
+                  {index === cursorPosition && <span className="cursor cursor-light-blue inline-block bg-blue-300 rounded-lg"></span>}
+                  <span key={index} className={`${textColor} ${bgColor} rounded-xl`}>
+                    {char} {/* Space is rendered normally, no special symbol */}
+                  </span>
+                </div>);
             })}
-          </p>
+            {/* Render the cursor at the end of the typed text */}
+          </div>
         </div>
 
         {/* Info container */}
