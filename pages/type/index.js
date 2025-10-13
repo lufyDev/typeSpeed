@@ -153,7 +153,7 @@ const Type = () => {
 
               return (
                 <div className='flex'>
-                  {index === cursorPosition && <span className="cursor cursor-light-blue inline-block bg-blue-300 rounded-lg"></span>}
+                  {index === cursorPosition && <span className="cursor cursor-light-blue inline-block bg-blue-300 rounded-lg mr-[-1px]"></span>}
                   <span key={index} className={`${textColor} ${bgColor} rounded-xl`}>
                     {char} {/* Space is rendered normally, no special symbol */}
                   </span>
