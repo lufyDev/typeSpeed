@@ -44,14 +44,18 @@ const Type = () => {
 
   const sentence = sentenceConfig.find(s => s.count === wordCount).sentence;
 
-  const checkCorrectWords = () => {
-    const originalText = sentence.join(" "); // Join words with spaces
-    const typedTextTrimmed = typedText.trim(); // Trim spaces at the end
+  // counts how many completed words are correct (positionally exact)
+  const checkCorrectCompletedWords = () => {
+    const originalWords = sentence; // array
+    if (!typedText) return 0;
+
+    // Split typed words. The last chunk is "in-progress" unless the text ends with a space.
+    const typedWords = typedText.split(" ");
+    const completedCount = Math.max(0, typedWords.length - 1); // completed == everything before the current partial
 
     let correct = 0;
-    // Compare each character (including spaces)
-    for (let i = 0; i < typedTextTrimmed.length; i++) {
-      if (typedTextTrimmed[i] === originalText[i]) correct++;
+    for (let i = 0; i < Math.min(completedCount, originalWords.length); i++) {
+      if (typedWords[i] === originalWords[i]) correct++;
     }
     return correct;
   };
@@ -77,23 +81,44 @@ const Type = () => {
   }, [startTime]);
 
   useEffect(() => {
-    if (typedText.length > 0 && startTime) {
-      const correct = checkCorrectWords(typedText);
-      setCorrectWordCount(correct);
-
-      const elapsed = (performance.now() - startTime) / 1000; // in seconds
-      setElapsedTime(elapsed);
-
-      const minutes = elapsed / 60;
-      const wpm = minutes > 0 ? correct / minutes : 0;
-      setWPM(wpm);
-
-      if (typedText.trim().split(" ").length === sentence.length) {
-        console.log("typing finished");
-        setIsTypingFinished(true);
-      }
+    if (typedText.length === 0 || !startTime) {
+      setCorrectWordCount(0);
+      setElapsedTime(0);
+      setWPM(0);
+      setIsTypingFinished(false);
+      return;
     }
-  }, [typedText, startTime]);
+
+    // word-based correctness
+    const correctCompleted = checkCorrectCompletedWords();
+    setCorrectWordCount(correctCompleted);
+
+    // timing + WPM from correct completed words
+    const elapsed = (performance.now() - startTime) / 1000; // seconds
+    setElapsedTime(elapsed);
+    const minutes = elapsed / 60;
+    setWPM(minutes > 0 ? correctCompleted / minutes : 0);
+
+    // finish when the last word is completed (space after last word)
+    const originalText = sentence.join(" ");
+    const isAtEnd = typedText.length >= originalText.length;
+    const completedAll =
+      // either exactly matches full sentence
+      typedText === originalText ||
+      // or matches sentence + trailing spaces (user hit extra spaces at end)
+      (typedText.startsWith(originalText) && /^\s*$/.test(typedText.slice(originalText.length)));
+
+    // Alternatively, detect based on completed words count:
+    // const typedWords = typedText.split(" ");
+    // const completedCount = Math.max(0, typedWords.length - 1);
+    // const finishedByWords = completedCount >= sentence.length && typedText.endsWith(" ");
+
+    if (completedAll || isAtEnd) {
+      setIsTypingFinished(true);
+    } else {
+      setIsTypingFinished(false);
+    }
+  }, [typedText, startTime, sentence]);
 
 
   useEffect(() => {
@@ -107,7 +132,9 @@ const Type = () => {
     setCorrectWordCount(0);
     setElapsedTime(0);
     setWPM(0);
-    setCursorPosition(0)
+    setCursorPosition(0);
+    setStartTime(null);          // <— reset timer
+    setIsTypingFinished(false);  // <— reset finished state
   };
   return (
     <MainLayout>
@@ -130,42 +157,130 @@ const Type = () => {
         </div>
 
         {/* Sentence with highlighting */}
-        <div className='sentence-container flex items-center justify-center min-h-32 max-w-3xl text-center'>
-          <div className='text-white font-medium text-2xl font-mono flex flex-wrap justify-center gap-2'>
-            {sentence.join(" ").split("").map((char, index) => {
-              const currentCharTyped = typedText[index] || ''; // Get the corresponding character typed
+        {/* Sentence with highlighting (no mid-word breaks, no extra gaps) */}
+        <div className="sentence-container flex items-center justify-center min-h-32 max-w-3xl text-center">
+          <div className="text-white font-medium text-2xl font-mono flex flex-wrap justify-center gap-2">
+            {(() => {
+              // Build once for clarity: iterate words, then chars
+              const words = sentence; // already an array
+              let globalIndex = 0;    // tracks index into originalText
 
-              let textColor = 'text-gray-400'; // Default color for non-typed characters
-              let bgColor = ''; // Default background color for spaces
+              const originalText = words.join(" ");
+              return words.map((word, wIdx) => {
+                // A word container that cannot wrap in the middle
+                const wordChars = word.split("").map((char, cIdx) => {
+                  const currentCharTyped = typedText[globalIndex] || "";
+                  const isMatch = currentCharTyped === char;
 
-              if (currentCharTyped === char) {
-                textColor = 'text-white'; // Correctly typed characters
-              } else if (currentCharTyped) {
-                textColor = 'text-red-500'; // Incorrectly typed characters
-              }
+                  let textColor = "text-gray-400";
+                  if (currentCharTyped) {
+                    textColor = isMatch ? "text-white" : "text-red-500";
+                  }
 
-              // Handle spaces
-              if (char === ' ' && currentCharTyped === '') {
-                bgColor = ''; // No background for untapped spaces
-              } else if (char === ' ' && currentCharTyped !== ' ') {
-                bgColor = 'bg-red-500/20 px-[1px]'; // Red background if space is mistyped
-              }
+                  // cursor logic: show cursor before this character if indices match
+                  const showCursor = globalIndex === cursorPosition;
 
-              return (
-                <div className='flex'>
-                  {index === cursorPosition && <span className="cursor cursor-light-blue inline-block bg-blue-300 rounded-lg mr-[-1px]"></span>}
-                  <span key={index} className={`${textColor} ${bgColor} rounded-xl`}>
-                    {char} {/* Space is rendered normally, no special symbol */}
+                  const node = (
+                    <span key={`c-${wIdx}-${cIdx}`} className={`${textColor}`}>
+                      {char}
+                    </span>
+                  );
+
+                  const out = (
+                    <span key={`wrap-${wIdx}-${cIdx}`} className="leading-none">
+                      {showCursor && (
+                        <span
+                          className="inline-block align-middle"
+                          style={{
+                            width: 2,
+                            height: "1.2em",
+                            background: "#93c5fd", // light blue
+                            marginRight: -1,
+                            borderRadius: 2,
+                          }}
+                        />
+                      )}
+                      {node}
+                    </span>
+                  );
+
+                  globalIndex += 1; // advance for each char
+                  return out;
+                });
+
+                // After each word (except the last), render a space as its own span
+                const spaceIndex = globalIndex; // where the space would be
+                const spaceTyped = typedText[spaceIndex] || "";
+                const spaceCorrect = spaceTyped === " ";
+                const showCursorBeforeSpace = spaceIndex === cursorPosition;
+
+                // advance globalIndex for the space (exists in originalText except after last word)
+                const spaceSpan =
+                  wIdx < words.length - 1 ? (
+                    <span key={`space-${wIdx}`} className="inline-block">
+                      {showCursorBeforeSpace && (
+                        <span
+                          className="inline-block align-middle"
+                          style={{
+                            width: 2,
+                            height: "1.2em",
+                            background: "#93c5fd",
+                            marginRight: -1,
+                            borderRadius: 2,
+                          }}
+                        />
+                      )}
+                      {/* Visible space between words; highlight if mistyped */}
+                      <span
+                        className={`${
+                          spaceTyped
+                            ? spaceCorrect
+                              ? "" // correct space: nothing special
+                              : "bg-red-500/20 px-[1px] rounded"
+                            : ""
+                        }`}
+                      >
+                        {" "}
+                      </span>
+                    </span>
+                  ) : null;
+
+                if (wIdx < words.length - 1) {
+                  globalIndex += 1; // count the space in originalText
+                }
+
+                return (
+                  <span
+                    key={`w-${wIdx}`}
+                    className="inline-flex whitespace-nowrap leading-none"
+                  >
+                    {/* characters of the word */}
+                    {wordChars}
+                    {/* the (wrappable) space after the word */}
+                    {spaceSpan}
                   </span>
-                </div>);
-            })}
-            {/* Render the cursor at the end of the typed text */}
+                );
+              });
+            })()}
+            {/* Render cursor at very end if user is at the end */}
+            {cursorPosition === sentence.join(" ").length && (
+              <span
+                className="inline-block align-middle"
+                style={{
+                  width: 2,
+                  height: "1.2em",
+                  background: "#93c5fd",
+                  marginLeft: 1,
+                  borderRadius: 2,
+                }}
+              />
+            )}
           </div>
         </div>
 
         {/* Info container */}
         <div className='info-container text-white text-xl flex flex-col gap-2'>
-          <p>Correct Words: {correctWordCount}</p>
+          <p>Correct Words: {correctWordCount} / {sentence.length}</p>
           <p>Elapsed Time: {elapsedTime.toFixed(1)} s</p>
           <p>WPM: {Math.round(WPM)}</p>
         </div>
