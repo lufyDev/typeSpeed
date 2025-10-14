@@ -19,7 +19,7 @@ const Type = () => {
     { 
       count: 10, 
       sentence: [
-        "Kenspeckle", "pupfishes", "skibobbing", "through", "dongola", "dreams", "imblazed", "his", "chin."
+        "Kenspeckle", "pupfishes", "skibobbing", "through", "dongola", "dreams", "imblazed", "his", "chin"
       ]
     },
     { 
@@ -27,7 +27,7 @@ const Type = () => {
       sentence: [
         "Amid", "dongola", "coppices,", "a", "squirrely", "expressman", "soliloquised", "about", "mothery", "frivolity", 
         "and", "kenspeckle", "pupfishes,", "misreporting", "replevied", "pasts", "while", "bowpots", "imblazed", 
-        "his", "eisegetical", "chin", "with", "collectivized", "dreams."
+        "his", "eisegetical", "chin", "with", "collectivized", "dreams"
       ]
     },
     { 
@@ -36,7 +36,7 @@ const Type = () => {
         "Amid", "kenspeckle", "coppices,", "a", "squirrely", "expressman", "soliloquised", "about", "skibobbing", 
         "pupfishes", "and", "mothery", "frivolity,", "misreporting", "ternaries", "of", "replevied", "pasts", 
         "while", "bowpots", "of", "dongola", "dreams", "imblazed", "his", "eisegetical", "chin,", "considering", 
-        "concomitantly", "collectivized", "regrets."
+        "concomitantly", "collectivized", "regrets"
       ]
     }
   ];
@@ -50,8 +50,8 @@ const Type = () => {
     if (!typedText) return 0;
 
     // Split typed words. The last chunk is "in-progress" unless the text ends with a space.
-    const typedWords = typedText.split(" ");
-    const completedCount = Math.max(0, typedWords.length - 1); // completed == everything before the current partial
+    const typedWords = typedText.trim().split(" ");
+    const completedCount = Math.max(0, typedWords.length); // completed == everything before the current partial
 
     let correct = 0;
     for (let i = 0; i < Math.min(completedCount, originalWords.length); i++) {
@@ -94,10 +94,12 @@ const Type = () => {
     setCorrectWordCount(correctCompleted);
 
     // timing + WPM from correct completed words
-    const elapsed = (performance.now() - startTime) / 1000; // seconds
-    setElapsedTime(elapsed);
-    const minutes = elapsed / 60;
-    setWPM(minutes > 0 ? correctCompleted / minutes : 0);
+    if (!isTypingFinished) { // Only update time if typing is not finished
+      const elapsed = (performance.now() - startTime) / 1000; // seconds
+      setElapsedTime(elapsed);
+      const minutes = elapsed / 60;
+      setWPM(minutes > 0 ? correctCompleted / minutes : 0);
+    }
 
     // finish when the last word is completed (space after last word)
     const originalText = sentence.join(" ");
@@ -107,11 +109,6 @@ const Type = () => {
       typedText === originalText ||
       // or matches sentence + trailing spaces (user hit extra spaces at end)
       (typedText.startsWith(originalText) && /^\s*$/.test(typedText.slice(originalText.length)));
-
-    // Alternatively, detect based on completed words count:
-    // const typedWords = typedText.split(" ");
-    // const completedCount = Math.max(0, typedWords.length - 1);
-    // const finishedByWords = completedCount >= sentence.length && typedText.endsWith(" ");
 
     if (completedAll || isAtEnd) {
       setIsTypingFinished(true);
@@ -136,6 +133,7 @@ const Type = () => {
     setStartTime(null);          // <— reset timer
     setIsTypingFinished(false);  // <— reset finished state
   };
+  console.log(isTypingFinished, "isTypingFinished")
   return (
     <MainLayout>
       <div className="main-container flex flex-col items-center justify-between gap-24 mt-12">
