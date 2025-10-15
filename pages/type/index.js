@@ -133,7 +133,19 @@ const Type = () => {
     setStartTime(null);          // <— reset timer
     setIsTypingFinished(false);  // <— reset finished state
   };
-  console.log(isTypingFinished, "isTypingFinished")
+
+  // Derived metrics for Info container
+  const minutes = elapsedTime / 60;
+  const rawCPM = minutes > 0 ? Math.round(typedText.length / minutes) : 0;
+  const rawWPM = Math.round(rawCPM / 5);
+  const attemptedWords = Math.min(
+    typedText.trimEnd().split(/\s+/).filter(Boolean).length,
+    sentence.length
+  );
+  const accuracy = attemptedWords > 0 ? Math.round((correctWordCount / attemptedWords) * 100) : 0;
+  const totalChars = sentence.join(' ').length;
+  const progress = totalChars > 0 ? Math.min(100, Math.round((cursorPosition / totalChars) * 100)) : 0;
+
   return (
     <MainLayout>
       <div className="main-container flex flex-col items-center justify-between gap-24 mt-12">
@@ -154,7 +166,6 @@ const Type = () => {
           ))}
         </div>
 
-        {/* Sentence with highlighting */}
         {/* Sentence with highlighting (no mid-word breaks, no extra gaps) */}
         <div className="sentence-container flex items-center justify-center min-h-32 max-w-3xl text-center">
           <div className="text-white font-medium text-2xl font-mono flex flex-wrap justify-center gap-2">
@@ -277,10 +288,59 @@ const Type = () => {
         </div>
 
         {/* Info container */}
-        <div className='info-container text-white text-xl flex flex-col gap-2'>
-          <p>Correct Words: {correctWordCount} / {sentence.length}</p>
-          <p>Elapsed Time: {elapsedTime.toFixed(1)} s</p>
-          <p>WPM: {Math.round(WPM)}</p>
+        <div
+          className='info-container text-white text-base md:text-lg w-full max-w-3xl flex flex-col gap-3'
+          aria-live="polite"
+        >
+          {/* Progress bar */}
+          <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-blue-500"
+              style={{ width: `${progress}%`, transition: 'width 150ms linear' }}
+            />
+          </div>
+
+          {/* Stats grid */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3" style={{ fontVariantNumeric: 'tabular-nums' }}>
+            <div className="bg-white/5 border border-white/10 rounded-lg px-3 py-2">
+              <div className="text-white/70 text-xs">Correct</div>
+              <div className="font-mono text-2xl">
+                {correctWordCount} <span className="text-white/50 text-base">/ {sentence.length}</span>
+              </div>
+            </div>
+
+            <div className="bg-white/5 border border-white/10 rounded-lg px-3 py-2">
+              <div className="text-white/70 text-xs">WPM</div>
+              <div className="font-mono text-2xl">{Math.round(WPM)}</div>
+              <div className="text-white/60 text-xs">raw {rawWPM}</div>
+            </div>
+
+            <div className="bg-white/5 border border-white/10 rounded-lg px-3 py-2">
+              <div className="text-white/70 text-xs">Accuracy</div>
+              <div className="font-mono text-2xl">{accuracy}%</div>
+            </div>
+
+            <div className="bg-white/5 border border-white/10 rounded-lg px-3 py-2">
+              <div className="text-white/70 text-xs">Time</div>
+              <div className="font-mono text-2xl">{elapsedTime.toFixed(1)}s</div>
+            </div>
+          </div>
+
+          {isTypingFinished && (
+            <div className="text-green-300 text-sm">Finished! Press Restart or change word count to try again.</div>
+          )}
+
+          <div className="flex gap-3">
+            <button
+              onClick={(e) => {
+                e.currentTarget.blur();
+                handleWordCountChange(wordCount)
+              }}
+              className="text-sm text-white/90 underline underline-offset-4"
+            >
+              Restart
+            </button>
+          </div>
         </div>
 
       </div>
